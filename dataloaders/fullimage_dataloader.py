@@ -42,17 +42,28 @@ class OxML_Supervised_Dataset(Dataset):
 
         self.this_transforms = this_transforms
         self._split_train_val(set=self.data_split)
+        message = ""
+        l, c = np.unique(self.labels, return_counts=True)
+        for i in range(len(l)):message += "{}:{} - ".format(l[i],c[i])
+        print("Split {} has {}".format(set_name, message[:-2]))
 
-        self.images = torch.cat([self._pad_image(read_image(f)).unsqueeze(dim=0) for f in self.data_filenames], dim=0)
+        if len(self.data_filenames)>0:
+            self.images = torch.cat([self._pad_image(read_image(f)).unsqueeze(dim=0) for f in self.data_filenames], dim=0)
+        else:
+            self.images = torch.Tensor([])
 
 
     def _split_train_val(self, set):
 
         if self.config.dataset.data_split.split_method == "random_stratified":
-            X_train, X_test, y_train, y_test = train_test_split( np.array(self.data_filenames),
-                                                                 self.labels,
-                                                                 test_size =self.config.dataset.data_split.val_split_rate,
-                                                                 random_state = self.config.training_params.seed, stratify=self.labels)
+            if self.config.dataset.data_split.test_split_rate != 0 :
+                X_train, X_test, y_train, y_test = train_test_split( np.array(self.data_filenames),
+                                                                     self.labels,
+                                                                     test_size =self.config.dataset.data_split.test_split_rate,
+                                                                     random_state = self.config.training_params.seed, stratify=self.labels)
+            else:
+                X_train, y_train = np.array(self.data_filenames), self.labels,
+                X_test, y_test = np.array([]), self.labels[0:0]
 
             X_train, X_val, y_train, y_val = train_test_split(X_train,
                                                                 y_train,
@@ -184,7 +195,7 @@ class OxML_Unlabelled_Dataset(Dataset):
     def __len__(self):
         return len(self.images)
 
-class OxML_Supervised_Dataloader():
+class OxML_FullImage_Supervised_Dataloader():
 
     def __init__(self, config):
         """

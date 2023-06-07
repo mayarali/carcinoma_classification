@@ -6,7 +6,8 @@ from types import SimpleNamespace
 def main():
 
     config_list = [
-        "./configs/fully_supervised/simple_CNN.json"
+        # "./configs/fully_supervised/simple_CNN.json"
+        "./configs/fully_supervised/simple_CNN_tiles.json"
     ]
     for conf in config_list:
 

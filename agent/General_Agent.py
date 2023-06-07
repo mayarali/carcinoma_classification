@@ -1,4 +1,5 @@
-from dataloader import OxML_Supervised_Dataloader
+from dataloaders.tile_dataloader import OxML_Tiles_Supervised_Dataloader
+from dataloaders.fullimage_dataloader import OxML_FullImage_Supervised_Dataloader
 from tqdm import tqdm
 import torch
 from colorama import Fore
@@ -10,7 +11,7 @@ from extra_utils.WarmupScheduler import WarmupScheduler
 from sklearn.metrics import f1_score, cohen_kappa_score, roc_auc_score, confusion_matrix
 import numpy as np
 from collections import defaultdict
-from models.Simple_CNN import Simple_CNN
+from models.Simple_CNN import *
 import csv
 
 
@@ -31,7 +32,8 @@ class General_Agent():
         self.train()
 
         self.model.load_state_dict(self.best_model.state_dict())
-        print(self.test())
+        if self.config.training_params.rec_test:
+            print(self.test())
         self.test_unlabelled()
 
     def init_logs(self):

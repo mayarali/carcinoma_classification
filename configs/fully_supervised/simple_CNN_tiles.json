@@ -3,8 +3,8 @@
       "cuda": true,
       "gpu_device": [0],
       "seed": 109,
-      "batch_size": 5,
-      "test_batch_size": 10,
+      "batch_size": 128,
+      "test_batch_size": 64,
       "data_loader_workers": 6,
       "pin_memory": true,
       "async_loading": true,
@@ -33,14 +33,14 @@
   "scheduler": {"type":"cosanneal", "max_lr": 0.03, "warm_up_steps": 780},
   "optimizer": {
     "type": "Adam",
-    "learning_rate": 0.001,
+    "learning_rate": 0.01,
     "momentum": 0.9,
     "weight_decay": 0.0000,
     "beta1": 0.9,
     "beta2": 0.999
   },
   "dataset": {
-    "dataloader_class": "OxML_FullImage_Supervised_Dataloader",
+    "dataloader_class": "OxML_Tiles_Supervised_Dataloader",
     "data_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/img_paths.txt",
     "label_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/labels.csv",
     "shuffle_train": true,
@@ -53,13 +53,13 @@
     }
   },
   "model": {
-    "model_class": "Simple_CNN",
+    "model_class": "Simple_CNN_tiles",
     "load_ongoing": false,
     "pretrained_model": {"dir": "", "use": false},
-    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn.pth.tar",
-    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_test_unlabelled.csv",
+    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_tiles.pth.tar",
+    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_tiles_test_unlabelled.csv",
     "args": {
-      "dmodel": 576,
+      "dmodel": 4096,
       "num_classes": 3,
       "fc_inner": 32,
       "dropout": 0.3
