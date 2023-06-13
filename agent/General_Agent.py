@@ -50,7 +50,10 @@ class General_Agent():
         self.device = "cuda:{}".format(self.config.training_params.gpu_device[0])
 
     def init_loss(self):
-        self.loss = nn.CrossEntropyLoss()
+        if self.weights:
+            self.loss = nn.CrossEntropyLoss(self.weights)
+        else:
+            self.loss = nn.CrossEntropyLoss()
 
     def init_model_opt(self):
         model_class = globals()[self.config.model.model_class]
