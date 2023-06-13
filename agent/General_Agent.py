@@ -20,6 +20,7 @@ class General_Agent():
         self.config = config
 
         self.dataloaders = globals()[self.config.dataset.dataloader_class](config)
+        self.weights = self.dataloaders.train_loader.dataset.weights
         self.init_model_opt()
         self.init_logs()
         self.init_loss()
@@ -40,6 +41,7 @@ class General_Agent():
         self.steps_no_improve = 0
 
         if "weights" not in vars(self).keys(): self.weights = None
+        else: print("CrossVal weights are {}".format(self.weights.data.cpu().numpy()))
 
         self.logs = {"current_epoch":0,"current_step":0,"steps_no_improve":0, "saved_step": 0, "train_logs":{},"val_logs":{},"test_logs":{},"best_logs":{"val_loss":{"total":100}} , "seed":self.config.training_params.seed, "weights": self.weights}
         # if self.config.training_params.wandb_disable:
@@ -50,8 +52,8 @@ class General_Agent():
         self.device = "cuda:{}".format(self.config.training_params.gpu_device[0])
 
     def init_loss(self):
-        if self.weights:
-            self.loss = nn.CrossEntropyLoss(self.weights)
+        if self.weights is not None:
+            self.loss = nn.CrossEntropyLoss(self.weights.to(self.device))
         else:
             self.loss = nn.CrossEntropyLoss()
 
@@ -263,6 +265,7 @@ class General_Agent():
         self.best_model.load_state_dict(checkpoint["best_model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         self.logs = checkpoint["logs"]
+        self.weights = self.logs["weights"]
         # if hasattr(checkpoint, "metrics"):
         #     self.data_loader.load_metrics_ongoing(checkpoint["metrics"])
         # if hasattr(self.logs, "weights"):
@@ -275,8 +278,7 @@ class General_Agent():
         #     for i, lr in enumerate(self.logs["train_logs"][step]["learning_rate"]):
         #         wandb.log({"lr": lr, "val": self.logs["val_logs"][step]},
         #                   step=i + step - self.config.early_stopping.validate_every)
-
-        self.loss = nn.CrossEntropyLoss()
+        self.init_loss()
 
         print("Model has loaded successfully")
         print("Metrics have been loaded")
