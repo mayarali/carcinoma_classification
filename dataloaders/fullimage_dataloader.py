@@ -34,6 +34,19 @@ class OxML_Supervised_Dataset(Dataset):
             reader = csv.reader(file)
             self.labels = {int(row[0]): int(row[1]) for row in reader if row[0] != "id"}
 
+
+        #Normalization per color
+        if set_name == "train" and self.config.dataset.normalize == "per_color":
+            self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=1).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean(dim=-1)/255
+            self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=1).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std(dim=-1)/255
+        #Normalization total
+        elif set_name == "train" and self.config.dataset.normalize == "total":
+            self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean()/255
+            self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std()/255
+        if hasattr(self, "normalization_mean"):
+            print("Normalization measures: \n mean: {} - std: {}".format(self.normalization_mean, self.normalization_std))
+            print("Please put the numbers by hand in _get_transformations of the dataloader!")
+
         #Keep only the images for which we have labels
         self.data_filenames = [i[:-1] for i in self.data_filenames if int(i.split(".")[0].split("_")[-1]) in self.labels.keys()] #-1 is to remove \n from the readlines
 
@@ -162,7 +175,6 @@ class OxML_Unlabelled_Dataset(Dataset):
 
         self.images = torch.cat([self._pad_image(read_image(self.data_filenames[f])).unsqueeze(dim=0) for f in self.data_filenames], dim=0)
 
-
     def _pad_image(self, image):
         max_w = 896
         max_h = 896
@@ -235,23 +247,23 @@ class OxML_FullImage_Supervised_Dataloader():
 
     def _get_transformations(self):
 
+
+
         Transf_train = transforms.Compose([
             transforms.ToPILImage(),
             transforms.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=(0.9, 1.1)),
             transforms.ColorJitter(brightness=0.2, contrast=0.2),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                 (0.2023, 0.1994, 0.2010)),
-        ])
+            # transforms.Normalize((0.4914, 0.4822, 0.4465),
+            #                      (0.2023, 0.1994, 0.2010)),
+            transforms.Normalize((0.7951, 0.6938, 0.8667),
+                                 (0.2115, 0.2500, 0.1176))])
 
         Transf_val = transforms.Compose([
             transforms.ToPILImage(),
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465),
-                                 (0.2023, 0.1994, 0.2010)),
-            # transforms.Grayscale(num_output_channels=1),
-            # transforms.Normalize(mean=[0.131015337], std=[0.30854015]),
-        ])
+            transforms.Normalize((0.7951, 0.6938, 0.8667),
+                                 (0.2115, 0.2500, 0.1176))])
 
         return {"train": Transf_train, "val": Transf_val}
 
