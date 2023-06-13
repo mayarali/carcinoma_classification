@@ -35,8 +35,9 @@ class General_Agent():
         self.model.load_state_dict(self.best_model.state_dict())
         if self.config.training_params.rec_test:
             print(self.test())
-        self.test_unlabelled()
+        results = self.test_unlabelled()
         self._plot_losses()
+        return results
 
     def init_logs(self):
         self.steps_no_improve = 0
@@ -264,13 +265,16 @@ class General_Agent():
             for batch_idx, served_dict in pbar:
                 data = served_dict["data"].float().to(self.device)
                 pred = self.model(data)
-                results.update({served_dict["id"][i].item(): pred[i].argmax(dim=0).detach().cpu().item() - 1 for i in
+                results.update({served_dict["id"][i].item(): pred[i].detach().cpu().numpy()  for i in
                                 range(len(pred))})
-
+        self.save_unlabelled(results)
+        return results
+    def save_unlabelled(self, results):
         with open(self.config.model.test_unlabelled_savedir, 'w') as csvfile:
             csvfile.write("%s,%s\n" % ("id", "malignant"))
             for key in results.keys():
-                csvfile.write("%s,%s\n" % (key, results[key]))
+                csvfile.write("%s,%s\n" % (key, results[key].argmax(axis=0) - 1))
+
     def load_model_logs(self, file_name):
 
         print("Loading from file {}".format(file_name))
