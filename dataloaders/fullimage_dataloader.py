@@ -178,17 +178,19 @@ class OxML_Supervised_Dataset(Dataset):
 
     def __getitem__(self, index):
 
-        # img_f = self.data_filenames[index]
-        # img = read_image(img_f)
+        real_index = index % len(self.images)
 
-        img = self.images[index]
+        img = self.images[real_index]
         img = self.this_transforms(img)
 
-        label = self.labels[index]
+        label = self.labels[real_index]
 
         return {"data": img, "label": label}
 
     def __len__(self):
+        if self.data_split == "train":
+            return len(self.images) * self.config.dataset.augment_by
+
         return len(self.images)
 
 class OxML_Unlabelled_Dataset(Dataset):
