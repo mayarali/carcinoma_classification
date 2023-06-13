@@ -17,7 +17,7 @@
         "use": false,
         "adv_epsilon": 0.01
       },
-      "tdqm_disable": false,
+      "tdqm_disable": true,
       "wandb_disable": false,
       "res": true
   },
@@ -30,25 +30,29 @@
     "n_steps_stop": 50,
     "n_steps_stop_after": 0
   },
-  "scheduler": {"type":"cosanneal", "max_lr": 0.03, "warm_up_steps": 780},
+  "scheduler": {"type":"cosanneal", "max_lr": 0.03, "warm_up_steps": 45},
   "optimizer": {
     "type": "Adam",
     "learning_rate": 0.001,
     "momentum": 0.9,
-    "weight_decay": 0.0000,
+    "weight_decay": 0.0001,
     "beta1": 0.9,
-    "beta2": 0.999
+    "beta2": 0.999,
+    "loss_weights": "distr"
   },
   "dataset": {
     "dataloader_class": "OxML_FullImage_Supervised_Dataloader",
     "data_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/img_paths.txt",
     "label_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/labels.csv",
     "shuffle_train": true,
+    "pad_mode": "reflect",
+    "normalize": "total",
+    "augment_by": 1,
     "data_split": {
-      "split_method": "random_stratified",
-      "val_split_rate": 0.2,
+      "split_method": "kfold",
+      "val_split_rate": 0.25,
       "test_split_rate": 0.0,
-      "split_fold_num": 3,
+      "split_fold_num": 5,
       "split_fold": 0
     }
   },
@@ -56,10 +60,10 @@
     "model_class": "Simple_CNN",
     "load_ongoing": false,
     "pretrained_model": {"dir": "", "use": false},
-    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn.pth.tar",
-    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_test_unlabelled.csv",
+    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_2.pth.tar",
+    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_test_unlabelled_2.csv",
     "args": {
-      "dmodel": 576,
+      "dmodel": 128,
       "num_classes": 3,
       "fc_inner": 32,
       "dropout": 0.3

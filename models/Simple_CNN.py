@@ -17,17 +17,17 @@ class Simple_CNN(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
             nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1, bias=False),
             nn.ReLU(inplace=True),
-            nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.Conv2d(16, 32, kernel_size=3, stride=2, padding=1, bias=False),
             nn.ReLU(inplace=True),
-            nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.AvgPool2d(16, stride=8),
+            nn.Conv2d(32, 32, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.AvgPool2d(32, stride=16),
             nn.Flatten(start_dim=1),
             nn.Linear(d_model, fc_inner),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(fc_inner, fc_inner),
-            nn.ReLU(),
-            nn.Dropout(dropout),
+            # nn.Linear(fc_inner, fc_inner),
+            # nn.ReLU(),
+            # nn.Dropout(dropout),
             nn.Linear(fc_inner, num_classes)
         )
 
