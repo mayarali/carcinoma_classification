@@ -123,19 +123,41 @@ class OxML_Supervised_Dataset(Dataset):
             raise ValueError("There is no such validation split method.")
 
     def _pad_image(self, image):
+
+        def find_padding(imsize, max_w, max_h):
+            h_padding = (max_w - imsize[2]) / 2
+            v_padding = (max_h - imsize[1]) / 2
+            l_pad = h_padding if h_padding % 1 == 0 else h_padding+0.5
+            t_pad = v_padding if v_padding % 1 == 0 else v_padding+0.5
+            r_pad = h_padding if h_padding % 1 == 0 else h_padding-0.5
+            b_pad = v_padding if v_padding % 1 == 0 else v_padding-0.5
+
+            padding = (int(l_pad), int(t_pad), int(r_pad), int(b_pad))
+            return padding
+
         max_w = 896
         max_h = 896
+        padding_mode = self.config.dataset.pad_mode
 
-        imsize = image.size()
-        h_padding = (max_w - imsize[2]) / 2
-        v_padding = (max_h - imsize[1]) / 2
-        l_pad = h_padding if h_padding % 1 == 0 else h_padding+0.5
-        t_pad = v_padding if v_padding % 1 == 0 else v_padding+0.5
-        r_pad = h_padding if h_padding % 1 == 0 else h_padding-0.5
-        b_pad = v_padding if v_padding % 1 == 0 else v_padding-0.5
+        padding = find_padding(imsize=image.size(), max_w=max_w, max_h=max_h)
 
-        padding = (int(l_pad), int(t_pad), int(r_pad), int(b_pad))
-        padded_im = pad(image, padding) # torchvision.transforms.functional.pad
+        #These if make the reflection twice cause torch.pad does not do it itself
+        if image.shape[1] < padding[1] and padding_mode == "reflect":
+            intermed_padding = (padding[0], int(image.shape[1])-1, padding[2], int(image.shape[1])-1)
+            image = pad(image, intermed_padding, padding_mode="reflect")
+            padding = find_padding(imsize=image.size(), max_w=max_w, max_h=max_h)
+
+        elif  image.shape[2] < padding[0] and padding_mode == "reflect":
+            intermed_padding = (int(image.shape[2])-1, padding[1], int(image.shape[2])-1, padding[1])
+            image = pad(image, intermed_padding, padding_mode="reflect")
+            padding = find_padding(imsize=image.size(), max_w=max_w, max_h=max_h)
+
+        if padding_mode == "reflect":
+            padded_im = pad(image, padding, padding_mode="reflect") # reflection pad
+        elif padding_mode == "zero":
+            padded_im = pad(image, padding) #zero_padding
+        else:
+            raise ValueError("config.dataset.pad_mode is not valid, options are 'zero' and 'reflect'")
 
         return padded_im
 
