@@ -96,27 +96,29 @@ class OxML_Supervised_Dataset(Dataset):
                 self.labels = y_train
 
         elif self.config.dataset.data_split.split_method == "kfold":
-            foldsplits = list(KFold(n_splits=self.config.dataset.data_split.split_fold_num, shuffle=True, random_state=self.config.training_params.seed).split(self.data_filenames))[self.config.dataset.data_split.split_fold]
+            if self.config.dataset.data_split.test_split_rate != 0 :
+                X_train, X_test, y_train, y_test = train_test_split( np.array(self.data_filenames),
+                                                                     self.labels,
+                                                                     test_size =self.config.dataset.data_split.test_split_rate,
+                                                                     random_state = self.config.training_params.seed, stratify=self.labels)
+            else:
+                X_train, y_train = np.array(self.data_filenames), self.labels,
+                X_test, y_test = np.array([]), self.labels[0:0]
+
+            foldsplits = list(KFold(n_splits=self.config.dataset.data_split.split_fold_num, shuffle=True, random_state=self.config.training_params.seed).split(X_train))[self.config.dataset.data_split.split_fold]
 
             if set == "test":
-                self.data_filenames = self.data_filenames[foldsplits[0]]
-                self.labels = self.labels[foldsplits[0]]
+                self.data_filenames = np.array(X_test)
+                self.labels = y_test
 
             elif set == "val":
-                X_train, X_val, y_train, y_val = train_test_split(self.data_filenames[foldsplits[1]],
-                                                                  self.labels[foldsplits[1]],
-                                                                  test_size=self.config.dataset.data_split.val_split_rate,
-                                                                  random_state=self.config.training_params.seed,
-                                                                  stratify=self.labels[foldsplits[1]])
+                X_val, y_val = np.array(self.data_filenames)[foldsplits[1]],  self.labels[foldsplits[1]]
                 self.data_filenames = X_val
                 self.labels = y_val
 
             elif set=="train":
-                X_train, X_val, y_train, y_val = train_test_split(self.data_filenames[foldsplits[1]],
-                                                                  self.labels[foldsplits[1]],
-                                                                  test_size=self.config.dataset.data_split.val_split_rate,
-                                                                  random_state=self.config.training_params.seed,
-                                                                  stratify=self.labels[foldsplits[1]])
+                X_train, y_train = np.array(self.data_filenames)[foldsplits[0]],  self.labels[foldsplits[0]]
+
                 self.data_filenames = X_train
                 self.labels = y_train
         else:
@@ -215,9 +217,6 @@ class OxML_Unlabelled_Dataset(Dataset):
         return padded_im
 
     def __getitem__(self, index):
-
-        # img_f = self.data_filenames[index]
-        # img = read_image(img_f)
 
         img = self.images[index]
         img = self.this_transforms(img)
