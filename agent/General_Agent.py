@@ -13,7 +13,7 @@ import numpy as np
 from collections import defaultdict
 from models.Simple_CNN import *
 import csv
-
+import matplotlib.pyplot as plt
 
 class General_Agent():
     def __init__(self, config):
@@ -36,6 +36,7 @@ class General_Agent():
         if self.config.training_params.rec_test:
             print(self.test())
         self.test_unlabelled()
+        self._plot_losses()
 
     def init_logs(self):
         self.steps_no_improve = 0
@@ -430,8 +431,8 @@ class General_Agent():
                                                                                                                    v * 100)
             if "val_k" in val_metrics:
                 for i, v in val_metrics["val_k"].items(): message += Fore.LIGHTGREEN_EX + "K_{}: {:.4f} ".format(i, v)
-            # if "val_perclassf1" in val_metrics:
-            #     for i, v in val_metrics["val_perclassf1"].items(): message += Fore.BLUE + "F1_perclass_{}: {} ".format(i,"{}".format(str(list((v*100).round(2)))))
+            if "val_perclassf1" in val_metrics:
+                for i, v in val_metrics["val_perclassf1"].items(): message += Fore.BLUE + "F1_perclass_{}: {} ".format(i,"{}".format(str(list((v*100).round(2)))))
             print(message)
     def _test_n_update(self):
         val_metrics = self.test()
@@ -516,3 +517,81 @@ class General_Agent():
             print("Total number of trainable parameters are: {}".format(model_total_params))
 
         return model_total_params
+
+    def _plot_losses(self, chosen_loss = None):
+
+        list_losses = ["total"]
+
+        # if type(self.logs["train_logs"][list(self.logs["train_logs"].keys())[0]]["train_loss"]) != dict: return self.sleep_plot_losses_old()
+
+        train_loss = { loss_key: np.array([self.logs["train_logs"][i]["train_loss"][loss_key] for i in self.logs["train_logs"]]) for loss_key in list_losses}
+        val_loss = {loss_key: np.array([self.logs["val_logs"][i]["val_loss"][loss_key] for i in self.logs["val_logs"]]) for loss_key in list_losses}
+        if "test_logs" in self.logs:
+            test_loss = {loss_key: np.array([self.logs["test_logs"][i]["test_loss"][loss_key] for i in self.logs["test_logs"]]) for loss_key in list_losses}
+
+
+        if chosen_loss and chosen_loss not in list_losses: raise ValueError("chosen loss doesnt exist, choose from {}".format(list_losses[1:]))
+
+        steps = np.array([i / self.logs["train_logs"][i]["validate_every"] for i in self.logs["train_logs"]]) - 1
+        best_step = (self.logs["best_logs"]["step"] / self.logs["train_logs"][self.logs["best_logs"]["step"]]["validate_every"]) - 1
+
+        plt.figure()
+        loss_min = 100
+        loss_max = 0
+        plotted_losses = 0
+        for loss_key in list_losses:
+            if loss_key == "total" or (chosen_loss and chosen_loss!=loss_key): continue
+
+            plt.plot(steps, (train_loss[loss_key]), label="Train_{}".format(loss_key))
+            plt.plot(steps, (val_loss[loss_key]), label="Valid_{}".format(loss_key))
+            if "test_logs" in self.logs and len(test_loss[loss_key])>0:
+                plt.plot(np.arange(0, len(steps), len(steps)/len(test_loss[loss_key])), test_loss[loss_key], label="Test_{}".format(loss_key))
+
+            loss_min = np.minimum(loss_min, np.min(train_loss[loss_key]))
+            loss_min = np.minimum(loss_min, np.min(val_loss[loss_key]))
+            loss_max = np.maximum(loss_max, np.max(train_loss[loss_key]))
+            loss_max = np.maximum(loss_max, np.max(val_loss[loss_key]))
+
+            best_loss = {loss_key: self.logs["best_logs"]["val_loss"][loss_key]}
+            plt.plot((best_step, best_step), (0, best_loss[loss_key]), linestyle="--", color="y")
+            plt.plot((0, best_step), (best_loss[loss_key], best_loss[loss_key]), linestyle="--", color="y")
+            plotted_losses += 1
+
+        if plotted_losses>1:
+            plt.xlabel('Steps')
+            plt.ylabel('Loss Values')
+            plt.title("Individual Losses")
+            if not np.isnan(loss_min) and not np.isnan(loss_max):
+                plt.ylim([loss_min - 0.05, loss_max + 0.05])
+            plt.legend()
+            # plt.savefig("/users/sista/kkontras/Documents/Sleep_Project/data/2021_data/loss.png")
+            plt.show()
+        else:
+            plt.close()
+
+        plt.figure()
+        loss_min = 100
+        loss_max = 0
+        loss_key = "total"
+        plt.plot(steps, train_loss[loss_key], label="Train_{}".format(loss_key))
+        plt.plot(steps, val_loss[loss_key], label="Valid_{}".format(loss_key))
+        if "test_logs" in self.logs and len(test_loss[loss_key])>0:
+            plt.plot(np.arange(0, len(steps), len(steps) / len(test_loss[loss_key])), test_loss[loss_key],
+                     label="Test_{}".format(loss_key))
+
+            # plt.plot(steps, test_loss[loss_key], label="Test_{}".format(loss_key))
+        loss_min = np.minimum(loss_min, np.min(train_loss[loss_key]))
+        loss_min = np.minimum(loss_min, np.min(val_loss[loss_key]))
+        loss_max = np.maximum(loss_max, np.max(train_loss[loss_key]))
+        loss_max = np.maximum(loss_max, np.max(val_loss[loss_key]))
+        best_loss = {loss_key: self.logs["best_logs"]["val_loss"][loss_key]}
+        plt.plot((best_step, best_step), (0, best_loss[loss_key]), linestyle="--", color="y", label="Chosen Point")
+        plt.plot((0, best_step), (best_loss[loss_key], best_loss[loss_key]), linestyle="--", color="y")
+
+        plt.xlabel('Steps')
+        plt.ylabel('Loss Values')
+        plt.title("Total Loss")
+        plt.ylim([loss_min - 0.05, loss_max + 0.05])
+        plt.legend()
+        # plt.savefig("/users/sista/kkontras/Documents/Sleep_Project/data/2021_data/loss.png")
+        plt.show()
