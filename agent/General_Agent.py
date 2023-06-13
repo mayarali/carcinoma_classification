@@ -41,7 +41,7 @@ class General_Agent():
     def init_logs(self):
         self.steps_no_improve = 0
 
-        if "weights" not in vars(self).keys(): self.weights = None
+        if "weights" not in vars(self).keys() or self.weights is None: self.weights = None
         else: print("CrossVal weights are {}".format(self.weights.data.cpu().numpy()))
 
         self.logs = {"current_epoch":0,"current_step":0,"steps_no_improve":0, "saved_step": 0, "train_logs":{},"val_logs":{},"test_logs":{},"best_logs":{"val_loss":{"total":100}} , "seed":self.config.training_params.seed, "weights": self.weights}
@@ -65,13 +65,26 @@ class General_Agent():
         self.best_model = copy.deepcopy(self.model)
         self._my_numel(self.model, verbose=True)
 
-        self.optimizer = optim.Adam(self.model.parameters(),
-                                          lr=self.config.optimizer.learning_rate,
-                                          betas=(self.config.optimizer.beta1, self.config.optimizer.beta2),
-                                          eps=1e-07,
-                                          weight_decay=self.config.optimizer.weight_decay)
+        if self.config.optimizer.type == "Adam":
+            self.optimizer = optim.Adam(self.model.parameters(),
+                                              lr=self.config.optimizer.learning_rate,
+                                              betas=(self.config.optimizer.beta1, self.config.optimizer.beta2),
+                                              eps=1e-07,
+                                              weight_decay=self.config.optimizer.weight_decay)
+        elif self.config.optimizer.type == "SGD":
+            self.optimizer = optim.SGD(self.model.parameters(),
+                                              lr=self.config.optimizer.learning_rate,
+                                              momentum=self.config.optimizer.momentum,
+                                              weight_decay=self.config.optimizer.weight_decay)
 
-        after_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=self.optimizer, T_0=4, T_mult=2)
+        if self.config.scheduler.type == "cosanneal":
+            after_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=self.optimizer, T_0=4, T_mult=2)
+
+        elif self.config.scheduler.type == "reduceonplateau":
+            after_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=self.optimizer, factor=0.3, patience=150,
+                                                                   verbose=True, threshold=0.001, threshold_mode='rel',
+                                                                   cooldown=0, min_lr=1e-6, eps=1e-08)
+
         self.scheduler = WarmupScheduler(optimizer=self.optimizer,
                                                base_lr=self.config.optimizer.learning_rate,
                                                n_warmup_steps=self.config.scheduler.warm_up_steps,
