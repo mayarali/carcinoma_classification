@@ -44,7 +44,7 @@ class OxML_Supervised_Dataset(Dataset):
             self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean()/255
             self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std()/255
         if hasattr(self, "normalization_mean"):
-            print("Normalization measures: \n mean: {} - std: {}".format(self.normalization_mean, self.normalization_std))
+            print("Normalization measures: \n mean: {} - std: {}".format(self.normalization_mean.data.cpu().numpy(), self.normalization_std.data.cpu().numpy()))
             print("Please put the numbers by hand in _get_transformations of the dataloader!")
 
         #Keep only the images for which we have labels
@@ -52,6 +52,8 @@ class OxML_Supervised_Dataset(Dataset):
 
         #Put the labels on an array aligned with the filenames
         self.labels = np.array([self.labels[int(i.split(".")[0].split("_")[-1])] for i in self.data_filenames])+1
+        if set_name == "train": self._find_weights()
+
 
         self.this_transforms = this_transforms
         self._split_train_val(set=self.data_split)
@@ -64,6 +66,17 @@ class OxML_Supervised_Dataset(Dataset):
             self.images = torch.cat([self._pad_image(read_image(f)).unsqueeze(dim=0) for f in self.data_filenames], dim=0)
         else:
             self.images = torch.Tensor([])
+
+
+    def _find_weights(self):
+
+        if self.config.optimizer.loss_weights == "ones":
+            self.weights = None
+        elif self.config.optimizer.loss_weights == "distr":
+            self.weights = torch.from_numpy(np.unique(self.labels, return_counts=True)[1])
+            self.weights = 1/self.weights
+            norm = self.weights.norm()
+            self.weights = self.weights/norm
 
 
     def _split_train_val(self, set):
