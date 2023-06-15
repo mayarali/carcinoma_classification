@@ -15,11 +15,12 @@ from collections import defaultdict
 from models.Simple_CNN import *
 import csv
 import matplotlib.pyplot as plt
+import random
 
 class General_Agent():
     def __init__(self, config):
         self.config = config
-
+        self.deterministic(self.config.training_params.seed)
         self.dataloaders = globals()[self.config.dataset.dataloader_class](config)
         self.weights = self.dataloaders.train_loader.dataset.weights
         self.init_model_opt()
@@ -39,6 +40,18 @@ class General_Agent():
         results = self.test_unlabelled()
         self._plot_losses()
         return results
+
+    def deterministic(self, seed):
+        torch.backends.cudnn.enabled = False
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
+        np.random.seed(seed)  # Numpy module.
+        random.seed(seed)  # Python random module.
+        torch.manual_seed(seed)
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+
 
     def init_logs(self):
         self.steps_no_improve = 0
@@ -343,6 +356,8 @@ class General_Agent():
         #                   step=i + step - self.config.early_stopping.validate_every)
         self.init_loss()
 
+
+
         print("Model has loaded successfully")
         print("Metrics have been loaded")
         print("Loaded loss weights are:", self.weights)
@@ -394,6 +409,23 @@ class General_Agent():
                 print(Fore.WHITE + "Models has saved successfully in {}".format(file_name))
         except:
             raise Exception("Problem in model saving")
+
+    def save_encoder(self):
+
+        for enc_num in range(len(self.config.model.encoders)):
+            if self.config.model.encoders[enc_num].savetrainedEncoder.save:
+                save_dict = {}
+                savior = {}
+                if hasattr(self.best_model.module, "encoder"):
+                    savior["encoder_state_dict"] = self.best_model.module.encoder.state_dict()
+                elif hasattr(self.best_model.module, "enc_{}".format(enc_num)):
+                    enc = getattr(self.best_model.module, "enc_{}".format(enc_num))
+                    savior["encoder_state_dict"] = enc.state_dict()
+                save_dict.update(savior)
+                try:
+                    torch.save(save_dict, self.config.model.encoders[enc_num].savetrainedEncoder.dir)
+                except:
+                    raise Exception("Problem in model saving")
 
     def local_logging(self, batch_idx):
         pbar_message = Fore.WHITE + "Training batch {0:d}/{1:d} steps no improve {2:d} with ".format(batch_idx,
@@ -448,7 +480,6 @@ class General_Agent():
                 self._test_n_update()
 
         return self._early_stop_check_n_save(not_saved)
-
     def checkpointing(self, batch_loss, predictions, targets):
 
         targets_tens = torch.cat(targets).cpu().numpy().flatten()
@@ -468,7 +499,6 @@ class General_Agent():
         val_metrics = self.validate()
         early_stop = self.monitoring(train_metrics=train_metrics, val_metrics=val_metrics)
         return early_stop, val_metrics["val_loss"]
-
     def _update_best_logs(self, current_step, val_metrics):
 
         val_metrics.update({"step": current_step})
@@ -524,6 +554,7 @@ class General_Agent():
         if not_saved and training_cycle % self.config.early_stopping.save_every == 0:
             # Some epochs without improvement have passed, we save to avoid losing progress even if its not giving new best
             self.save_model_logs(self.config.model.save_dir)
+            self.save_encoder()
             self.logs["saved_step"] = self.logs["current_step"]
 
         if training_cycle == self.config.early_stopping.n_steps_stop_after:
