@@ -21,8 +21,7 @@ def mean_results(aggregate_results):
 def main():
 
     config_list = [
-        "./configs/fully_supervised/simple_CNN.json"
-        # "./configs/fully_supervised/simple_CNN_tiles.json"
+        "./configs/fully_supervised/simple_CNN_kfold.json"
     ]
     for conf in config_list:
         #Load config and turn it into class

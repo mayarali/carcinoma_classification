@@ -3,7 +3,7 @@
       "cuda": true,
       "gpu_device": [0],
       "seed": 109,
-      "batch_size": 5,
+      "batch_size": 16,
       "test_batch_size": 10,
       "data_loader_workers": 6,
       "pin_memory": true,
@@ -33,7 +33,7 @@
   "scheduler": {"type":"cosanneal", "max_lr": 0.03, "warm_up_steps": 45},
   "optimizer": {
     "type": "Adam",
-    "learning_rate": 0.0005,
+    "learning_rate": 0.001,
     "momentum": 0.9,
     "weight_decay": 0.0001,
     "beta1": 0.9,
@@ -41,42 +41,38 @@
     "loss_weights": "ones"
   },
   "dataset": {
-    "dataloader_class": "OxML_FullImage_Supervised_Dataloader",
-    "data_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/img_paths.txt",
-    "label_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/labels.csv",
+    "dataloader_class": "OxML_FullImage_Supervised_BreaKHis_v1_Dataloader",
+    "data_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/BreaKHis_v1/img_paths.txt",
+    "label_root": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/OxML/BreaKHis_v1/labels.txt",
     "shuffle_train": true,
-    "pad_mode": "zero",
-    "normalize": "total",
+    "binary_problem": true,
+    "pad_mode": "reflect",
+    "normalize": "per_color",
     "augment_by": 1,
     "data_split": {
-      "split_method": "kfold",
-      "val_split_rate": 0.25,
-      "test_split_rate": 0.0,
-      "split_fold_num": 10,
-      "split_fold": 0
+      "split_method": "random_stratified",
+      "val_split_rate": 0.1,
+      "test_split_rate": 0.0
     }
   },
   "model": {
     "model_class": "Simple_CNN",
     "load_ongoing": false,
     "pretrained_model": {"dir": "", "use": false},
-    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_kfold.pth.tar",
-    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_test_unlabelled_kfolds.csv",
+    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_breakhis.pth.tar",
     "args": {
       "dmodel": 256,
-      "num_classes": 3,
+      "num_classes": 2,
       "fc_inner": 32,
-      "dropout": 0.4
+      "dropout": 0.3
     },
-    "encoders": [{
-      "model_class": "Simple_CNN",
+    "encoders": [
+      {
+      "model_class": "CNN_part",
+      "load_ongoing": false,
       "pretrained_model": {"dir": "", "use": false},
-      "args": {
-            "dmodel": 256,
-            "num_classes": 3,
-            "fc_inner": 32,
-            "dropout": 0.4
-        }
+      "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/cnn_part_breakhis.pth.tar",
+      "args": {}
       }
     ]
   }
