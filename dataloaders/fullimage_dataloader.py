@@ -52,6 +52,9 @@ class OxML_Supervised_Dataset(Dataset):
 
         #Put the labels on an array aligned with the filenames
         self.labels = np.array([self.labels[int(i.split(".")[0].split("_")[-1])] for i in self.data_filenames])+1
+        if self.config.dataset.binary_problem:
+            self.labels[self.labels==2] = 1
+
         if set_name == "train": self._find_weights()
 
 
