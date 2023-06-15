@@ -233,6 +233,7 @@ class General_Agent():
                                                                     self.running_values["targets"])
                 val_metrics["val_perclassf1"][pred_key] = f1_score(total_preds[pred_key],
                                                                     self.running_values["targets"], average=None)
+                val_metrics["val_confmatrix"][pred_key] = confusion_matrix(total_preds[pred_key], self.running_values["targets"])
             val_metrics = dict(val_metrics)  # Avoid passing empty dicts to logs, better return an error!
 
         return val_metrics
