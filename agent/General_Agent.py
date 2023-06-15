@@ -1,5 +1,6 @@
 from dataloaders.tile_dataloader import OxML_Tiles_Supervised_Dataloader
 from dataloaders.fullimage_dataloader import OxML_FullImage_Supervised_Dataloader
+from dataloaders.fullimage_breakhis_v1_dataloader import OxML_FullImage_Supervised_BreaKHis_v1_Dataloader
 from tqdm import tqdm
 import torch
 from colorama import Fore
@@ -60,9 +61,46 @@ class General_Agent():
             self.loss = nn.CrossEntropyLoss()
 
     def init_model_opt(self):
+        def load_encoders():
+            encs = []
+            for num_enc in range(len(self.config.model.encoders)):
+                enc_class = globals()[self.config.model.encoders[num_enc].model_class]
+                args = self.config.model.encoders[num_enc].args
+
+                enc = enc_class(args = args)
+                enc = nn.DataParallel(enc, device_ids=[torch.device(i) for i in self.config.training_params.gpu_device])
+
+                if self.config.model.encoders[num_enc].pretrained_model.use:
+
+                    # 1. filter out unnecessary keys
+                    # 2. overwrite entries in the existing state dict
+                    # model_dict.update(pretrained_dict)
+                    # # 3. load the new state dict
+                    # model.load_state_dict(pretrained_dict)
+
+                    print("Loading encoder from {}".format(self.config.model.encoders[num_enc].pretrained_model.dir))
+                    checkpoint = torch.load(self.config.model.encoders[num_enc].pretrained_model.dir)
+                    if "encoder_state_dict" in checkpoint:
+                        enc.load_state_dict(checkpoint["encoder_state_dict"])
+                    elif "model_state_dict" in checkpoint:
+                        enc.load_state_dict(checkpoint["model_state_dict"])
+
+                encs.append(enc)
+            return encs
+
+        encs = load_encoders()
         model_class = globals()[self.config.model.model_class]
-        self.model = model_class(args = self.config.model.args)
-        self.model = nn.DataParallel(model_class(args = self.config.model.args), device_ids=[torch.device(i) for i in self.config.training_params.gpu_device])
+        self.model = model_class(encs=encs, args = self.config.model.args)
+        self.model = nn.DataParallel(model_class(encs=encs, args = self.config.model.args), device_ids=[torch.device(i) for i in self.config.training_params.gpu_device])
+        if self.config.model.pretrained_model.use:
+            print("Loading model from {}".format(self.config.model.pretrained_model.dir))
+            checkpoint = torch.load(self.config.model.pretrained_model.dir)
+            if "encoder_state_dict" in checkpoint:
+                self.model.load_state_dict(checkpoint["encoder_state_dict"])
+            elif "model_state_dict" in checkpoint:
+                self.model.load_state_dict(checkpoint["model_state_dict"])
+
+
         self.best_model = copy.deepcopy(self.model)
         self._my_numel(self.model, verbose=True)
 
@@ -92,7 +130,6 @@ class General_Agent():
                                                after_scheduler=after_scheduler)
 
         # wandb.watch(self.model, log_freq=100)
-
 
     def train(self):
 
@@ -376,7 +413,6 @@ class General_Agent():
         pbar_message += "saved at {}".format(self.running_values["saved_at_step"])
         return pbar_message
 
-
     def monitoring(self, train_metrics, val_metrics):
 
         self._find_learning_rate()
@@ -405,7 +441,6 @@ class General_Agent():
 
         return self._early_stop_check_n_save(not_saved)
 
-
     def checkpointing(self, batch_loss, predictions, targets):
 
         targets_tens = torch.cat(targets).cpu().numpy().flatten()
@@ -425,8 +460,6 @@ class General_Agent():
         val_metrics = self.validate()
         early_stop = self.monitoring(train_metrics=train_metrics, val_metrics=val_metrics)
         return early_stop, val_metrics["val_loss"]
-
-
 
     def _update_best_logs(self, current_step, val_metrics):
 
