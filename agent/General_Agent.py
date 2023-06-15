@@ -294,6 +294,8 @@ class General_Agent():
         return test_metrics
 
     def test_unlabelled(self):
+        if self.dataloaders.test_loader_unlabelled is None: return None
+
         self.best_model.eval()
         results = {}
         with torch.no_grad():
@@ -308,10 +310,15 @@ class General_Agent():
         self.save_unlabelled(results)
         return results
     def save_unlabelled(self, results):
+        if results is None:
+            print("Unlabelled results were None")
+            return
+
         with open(self.config.model.test_unlabelled_savedir, 'w') as csvfile:
             csvfile.write("%s,%s\n" % ("id", "malignant"))
             for key in results.keys():
                 csvfile.write("%s,%s\n" % (key, results[key].argmax(axis=0) - 1))
+        print("Saved results in {}".format(self.config.model.test_unlabelled_savedir))
 
     def load_model_logs(self, file_name):
 
