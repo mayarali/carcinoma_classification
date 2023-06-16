@@ -16,6 +16,12 @@ from models.Simple_CNN import *
 import csv
 import matplotlib.pyplot as plt
 import random
+from sklearn.manifold import TSNE
+from matplotlib import cm
+
+import matplotlib.pyplot as plt
+
+
 
 class General_Agent():
     def __init__(self, config):
@@ -38,6 +44,7 @@ class General_Agent():
         if self.config.training_params.rec_test:
             print(self.test())
         results = self.test_unlabelled()
+        self.tsne_val()
         self._plot_losses()
         return results
 
@@ -51,7 +58,6 @@ class General_Agent():
         torch.manual_seed(seed)
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
-
 
     def init_logs(self):
         self.steps_no_improve = 0
@@ -322,6 +328,70 @@ class General_Agent():
                                 range(len(pred))})
         self.save_unlabelled(results)
         return results
+
+    def tsne_val(self):
+        self.model.eval()
+        self.running_values = {
+            "targets": [],
+            "preds": [],
+            "features": []
+        }
+        with torch.no_grad():
+            pbar = tqdm(enumerate(self.dataloaders.total_loader), desc="Val-TSNE", leave=False,
+                        disable=True, position=1)
+            for batch_idx, served_dict in pbar:
+
+                data = served_dict["data"].float().to(self.device)
+                label = served_dict["label"].squeeze().type(torch.LongTensor).to(self.device)
+
+                pred, features  = self.model(data, return_features=True)
+
+                self.running_values["targets"].append(label)
+                self.running_values["preds"].append(pred.argmax(dim=-1).detach())
+                self.running_values["features"].append(features)
+
+                del served_dict
+
+            self.running_values["targets"] = torch.cat(self.running_values["targets"]).cpu().numpy()
+            self.running_values["preds"] = torch.cat(self.running_values["preds"]).cpu().numpy()
+            self.running_values["features"] = torch.cat(self.running_values["features"]).cpu().numpy()
+
+        image_embedding = self.running_values["features"]
+        pred_y = self.running_values["targets"]
+        train_y = self.running_values["targets"]
+
+
+
+        # Create a two dimensional t-SNE projection of the embeddings
+        tsne = TSNE(2, verbose=1)
+        tsne_proj = tsne.fit_transform(image_embedding)
+        # Plot those points as a scatter plot and label them based on the pred labels
+        cmap = cm.get_cmap('tab20')
+        fig, ax = plt.subplots(figsize=(8, 8))
+        num_categories = self.config.model.args.num_classes
+        for lab in range(num_categories):
+            indices = train_y == lab
+            ax.scatter(tsne_proj[indices, 0], tsne_proj[indices, 1], c=np.array(cmap(lab)).reshape(1,4),
+                       label=lab, alpha=0.7)
+        plt.title("TSNE-True Labels")
+        ax.legend(fontsize='large', markerscale=2)
+        plt.show()
+
+        # Create a two dimensional t-SNE projection of the embeddings
+        tsne = TSNE(2, verbose=1)
+        tsne_proj = tsne.fit_transform(image_embedding)
+        # Plot those points as a scatter plot and label them based on the pred labels
+        cmap = cm.get_cmap('tab20')
+        fig, ax = plt.subplots(figsize=(8, 8))
+        num_categories = self.config.model.args.num_classes
+        for lab in range(num_categories):
+            indices = pred_y == lab
+            ax.scatter(tsne_proj[indices, 0], tsne_proj[indices, 1], c=np.array(cmap(lab)).reshape(1,4),
+                       label=lab, alpha=0.7)
+        plt.title("TSNE-Predictions")
+        ax.legend(fontsize='large', markerscale=2)
+        plt.show()
+
     def save_unlabelled(self, results):
         if results is None:
             print("Unlabelled results were None")
