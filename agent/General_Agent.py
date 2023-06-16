@@ -13,6 +13,7 @@ from sklearn.metrics import f1_score, cohen_kappa_score, roc_auc_score, confusio
 import numpy as np
 from collections import defaultdict
 from models.Simple_CNN import *
+from models.CNN_PB import *
 import csv
 import matplotlib.pyplot as plt
 import random
@@ -202,6 +203,7 @@ class General_Agent():
                 if self.running_values["early_stop"]: return
                 self.logs["current_step"] += 1
 
+    #https://github.com/shivgahlout/Robust-Classification-with-Convolutional-Prototype-Learning-Pytorch/blob/master/train_utils.py#L37
     def validate(self):
         self.model.eval()
         self.running_values = {
@@ -247,7 +249,7 @@ class General_Agent():
                                                              total_preds[pred_key]).sum() / len(
                     self.running_values["targets"])
                 val_metrics["val_f1"][pred_key] = f1_score(total_preds[pred_key], self.running_values["targets"],
-                                                            average="macro")
+                                                            average="micro")
                 val_metrics["val_k"][pred_key] = cohen_kappa_score(total_preds[pred_key],
                                                                     self.running_values["targets"])
                 val_metrics["val_perclassf1"][pred_key] = f1_score(total_preds[pred_key],
@@ -303,7 +305,7 @@ class General_Agent():
                                                              total_preds[pred_key]).sum() / len(
                     self.running_values["targets"])
                 test_metrics["test_f1"][pred_key] = f1_score(total_preds[pred_key], self.running_values["targets"],
-                                                            average="macro")
+                                                            average="micro")
                 test_metrics["test_k"][pred_key] = cohen_kappa_score(total_preds[pred_key],
                                                                     self.running_values["targets"])
                 test_metrics["test_perclassf1"][pred_key] = f1_score(total_preds[pred_key],
@@ -313,7 +315,7 @@ class General_Agent():
         return test_metrics
 
     def test_unlabelled(self):
-        if self.dataloaders.test_loader_unlabelled is None: return None
+        if self.dataloaders.test_loader_unlabelled.dataset is None: return None
 
         self.best_model.eval()
         results = {}
@@ -560,7 +562,7 @@ class General_Agent():
         for pred_key in predictions[0]:
             total_preds[pred_key] = np.concatenate([pred[pred_key] for pred in predictions if pred_key in pred],axis=0).argmax(axis=-1)
             train_metrics["train_acc"][pred_key] =  np.equal(target_dict[pred_key], total_preds[pred_key]).sum() / len(target_dict[pred_key])
-            train_metrics["train_f1"][pred_key] = f1_score(total_preds[pred_key], target_dict[pred_key], average="macro")
+            train_metrics["train_f1"][pred_key] = f1_score(total_preds[pred_key], target_dict[pred_key], average="micro")
             train_metrics["train_k"][pred_key] = cohen_kappa_score(total_preds[pred_key], target_dict[pred_key])
             train_metrics["train_perclassf1"][pred_key] = f1_score(total_preds[pred_key], target_dict[pred_key], average=None)
 
