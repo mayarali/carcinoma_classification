@@ -27,18 +27,18 @@
     "save_every": 1,
     "validate_every": 9,
     "validate_after": 0,
-    "n_steps_stop": 100,
+    "n_steps_stop": 1,
     "n_steps_stop_after": 0
   },
   "scheduler": {"type":"cosanneal", "max_lr": 0.03, "warm_up_steps": 45},
   "optimizer": {
     "type": "Adam",
-    "learning_rate": 0.001,
+    "learning_rate": 0.0001,
     "momentum": 0.9,
-    "weight_decay": 0.0001,
+    "weight_decay": 0.00001,
     "beta1": 0.9,
     "beta2": 0.999,
-    "loss_weights": "ones"
+    "loss_weights": "distr"
   },
   "dataset": {
     "dataloader_class": "OxML_FullImage_Supervised_BreaKHis_v1_Dataloader",
@@ -51,13 +51,13 @@
     "augment_by": 1,
     "data_split": {
       "split_method": "random_stratified",
-      "val_split_rate": 0.1,
-      "test_split_rate": 0.0
+      "val_split_rate": 0.2,
+      "test_split_rate": 0.2
     }
   },
   "model": {
     "model_class": "Simple_CNN",
-    "load_ongoing": false,
+    "load_ongoing": true,
     "pretrained_model": {"dir": "", "use": false},
     "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_breakhis.pth.tar",
     "args": {
@@ -71,7 +71,8 @@
       "model_class": "CNN_part",
       "load_ongoing": false,
       "pretrained_model": {"dir": "", "use": false},
-      "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/cnn_part_breakhis.pth.tar",
+      "savetrainedEncoder": {"save":  true,
+        "dir":"/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/cnn_part_breakhis.pth.tar"},
       "args": {}
       }
     ]

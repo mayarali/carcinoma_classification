@@ -2,7 +2,7 @@
     "training_params": {
       "cuda": true,
       "gpu_device": [0],
-      "seed": 109,
+      "seed": 15,
       "batch_size": 5,
       "test_batch_size": 10,
       "data_loader_workers": 6,
@@ -27,18 +27,18 @@
     "save_every": 1,
     "validate_every": 9,
     "validate_after": 0,
-    "n_steps_stop": 100,
+    "n_steps_stop": 150,
     "n_steps_stop_after": 0
   },
   "scheduler": {"type":"cosanneal", "max_lr": 0.03, "warm_up_steps": 45},
   "optimizer": {
     "type": "Adam",
-    "learning_rate": 0.001,
+    "learning_rate": 0.0001,
     "momentum": 0.9,
     "weight_decay": 0.0001,
     "beta1": 0.9,
     "beta2": 0.999,
-    "loss_weights": "distr"
+    "loss_weights": "ones"
   },
   "dataset": {
     "dataloader_class": "OxML_FullImage_Supervised_Dataloader",
@@ -51,45 +51,29 @@
     "augment_by": 1,
     "data_split": {
       "split_method": "random_stratified",
-      "val_split_rate": 0.1,
+      "val_split_rate": 0.2,
       "test_split_rate": 0.0
     }
   },
   "model": {
-    "model_class": "Simple_CNN_2Binary",
+    "model_class": "CNN_PB",
     "load_ongoing": false,
     "pretrained_model": {"dir": "", "use": false},
-    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_2b.pth.tar",
-    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_test_unlabelled_2b.csv",
+    "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/cnn_pb.pth.tar",
+    "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/cnn_pb_test_unlabelled.csv",
     "args": {
       "dmodel": 256,
       "num_classes": 3,
-      "fc_inner": 32,
-      "dropout": 0.3
+      "fc_inner": 64,
+      "scale": 1
     },
     "encoders": [{
-                  "model_class": "Simple_CNN",
+                  "model_class": "CNN_PB_part",
                   "pretrained_model": {
-                    "dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_breakhis.pth.tar",
-                    "use": true},
+                    "dir": "",
+                    "use": false},
+                  "savetrainedEncoder": {"save":  false},
                   "args": {
-                        "dmodel": 256,
-                        "num_classes": 2,
-                        "fc_inner": 32,
-                        "dropout": 0.4
-                    }
-                  },
-                  {
-                    "model_class": "Simple_CNN",
-                    "pretrained_model": {
-                      "dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_breakhis.pth.tar",
-                      "use": true
-                    },
-                    "args": {
-                      "dmodel": 256,
-                      "num_classes": 3,
-                      "fc_inner": 32,
-                      "dropout": 0.4
                     }
                   }
         ]

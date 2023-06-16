@@ -35,17 +35,17 @@ class OxML_FullImage_Supervised_BreaKHis_v1_Dataset(Dataset):
         self.labels[self.labels=="malignant\n"] = 1
         self.labels = torch.from_numpy(np.array(self.labels, dtype=int))
 
-        #Normalization per color
-        if set_name == "train" and self.config.dataset.normalize == "per_color":
-            self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=1).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean(dim=-1)/255
-            self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=1).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std(dim=-1)/255
-        #Normalization total
-        elif set_name == "train" and self.config.dataset.normalize == "total":
-            self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean()/255
-            self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std()/255
-        if hasattr(self, "normalization_mean"):
-            print("Normalization measures: \n mean: {} - std: {}".format(self.normalization_mean.data.cpu().numpy(), self.normalization_std.data.cpu().numpy()))
-            print("Please put the numbers by hand in _get_transformations of the dataloader!")
+        # #Normalization per color
+        # if set_name == "train" and self.config.dataset.normalize == "per_color":
+        #     self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=1).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean(dim=-1)/255
+        #     self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=1).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std(dim=-1)/255
+        # #Normalization total
+        # elif set_name == "train" and self.config.dataset.normalize == "total":
+        #     self.normalization_mean = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames],dim=-1).mean()/255
+        #     self.normalization_std = torch.cat([read_image(f[:-1]).float().flatten(start_dim=0).unsqueeze(dim=0) for f in self.data_filenames], dim=-1).std()/255
+        # if hasattr(self, "normalization_mean"):
+        #     print("Normalization measures: \n mean: {} - std: {}".format(self.normalization_mean.data.cpu().numpy(), self.normalization_std.data.cpu().numpy()))
+        #     print("Please put the numbers by hand in _get_transformations of the dataloader!")
 
         if set_name == "train": self._find_weights()
         self.this_transforms = this_transforms
@@ -255,6 +255,6 @@ class OxML_FullImage_Supervised_BreaKHis_v1_Dataloader():
         train_dataset = OxML_FullImage_Supervised_BreaKHis_v1_Dataset(config=self.config, set_name="train", this_transforms=this_transforms["train"])
         valid_dataset = OxML_FullImage_Supervised_BreaKHis_v1_Dataset(config=self.config, set_name="val", this_transforms=this_transforms["val"])
         test_dataset = OxML_FullImage_Supervised_BreaKHis_v1_Dataset(config=self.config, set_name="test", this_transforms=this_transforms["val"])
-        total_dataset = OxML_FullImage_Supervised_BreaKHis_v1_Dataset(config=self.config, set_name="total")
+        total_dataset = OxML_FullImage_Supervised_BreaKHis_v1_Dataset(config=self.config, set_name="total", this_transforms=this_transforms["val"])
 
         return train_dataset, valid_dataset, test_dataset, None , total_dataset

@@ -290,23 +290,34 @@ class OxML_FullImage_Supervised_Dataloader():
 
         Transf_train = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.RandomAffine(degrees=60, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+            transforms.RandomAffine(degrees=100, translate=(0.2, 0.2), scale=(0.9, 1.1)),
             # transforms.RandomAffine(degrees=180, translate=(0.3, 0.3)),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+            transforms.ColorJitter(brightness=0.15, contrast=0.15),
             transforms.ToTensor(),
-            # transforms.Normalize((0.4914, 0.4822, 0.4465),
-            #                      (0.2023, 0.1994, 0.2010)),
+        # ])
+        #     transforms.Normalize((0.4914, 0.4822, 0.4465),
+        #                          (0.2023, 0.1994, 0.2010))])
             transforms.Normalize((0.7951, 0.6938, 0.8667),
                                  (0.2115, 0.2500, 0.1176))])
+
+            # transforms.Normalize((0.485, 0.456, 0.406),
+            #                      (0.229, 0.224, 0.225))])
+
             # transforms.Normalize(0.7852222323417664 , 0.21302133798599243)])
 
         Transf_val = transforms.Compose([
             transforms.ToPILImage(),
             transforms.ToTensor(),
-            # transforms.Normalize((0.4914, 0.4822, 0.4465),
-            #                      (0.2023, 0.1994, 0.2010))])
+
+        # ])
+        #     transforms.Normalize((0.4914, 0.4822, 0.4465),
+        #                          (0.2023, 0.1994, 0.2010))])
             transforms.Normalize((0.7951, 0.6938, 0.8667),
                                  (0.2115, 0.2500, 0.1176))])
+
+            # transforms.Normalize((0.485, 0.456, 0.406),
+            #                      (0.229, 0.224, 0.225))])
+
             # transforms.Normalize(0.7852222323417664, 0.21302133798599243)])
 
         return {"train": Transf_train, "val": Transf_val}
@@ -318,6 +329,6 @@ class OxML_FullImage_Supervised_Dataloader():
         valid_dataset = OxML_Supervised_Dataset(config=self.config, set_name="val", this_transforms=this_transforms["val"])
         test_dataset = OxML_Supervised_Dataset(config=self.config, set_name="test", this_transforms=this_transforms["val"])
         test_unlabelled_dataset = OxML_Unlabelled_Dataset(config=self.config, set_name="test", this_transforms=this_transforms["val"])
-        total_dataset = OxML_Supervised_Dataset(config=self.config, set_name="total")
+        total_dataset = OxML_Supervised_Dataset(config=self.config, set_name="total", this_transforms=this_transforms["val"])
 
         return train_dataset, valid_dataset, test_dataset, test_unlabelled_dataset, total_dataset
