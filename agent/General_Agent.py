@@ -42,6 +42,7 @@ class General_Agent():
         self.train()
 
         self.model.load_state_dict(self.best_model.state_dict())
+        print(self.validate())
         if self.config.training_params.rec_test:
             print(self.test())
         results = self.test_unlabelled()
@@ -181,8 +182,16 @@ class General_Agent():
                 label = served_dict["label"].squeeze().type(torch.LongTensor).to(self.device)
 
                 pred = self.model(data)
-
                 total_loss = self.loss(pred, label)
+
+
+                # features, centers, distance, test_outputs = self.model(data)
+                # _, pred = torch.max(distance, 1)
+                # loss1 = F.nll_loss(test_outputs, label)
+                # loss2 = regularization(features, centers, label)
+                # total_loss = loss1 + 0.001*loss2
+
+
                 total_loss.backward()
 
                 # torch.nn.utils.clip_grad_norm_(self.agent.model.parameters(), 1)
@@ -220,8 +229,15 @@ class General_Agent():
                 label = served_dict["label"].squeeze().type(torch.LongTensor).to(self.device)
 
                 pred = self.model(data)
-
                 total_loss = self.loss(pred, label)
+
+                # features, centers, distance, test_outputs = self.model(data)
+                # _, pred = torch.max(distance, 1)
+                # loss1 = F.nll_loss(test_outputs, label)
+                # loss2 = regularization(features, centers, label)
+                # total_loss = loss1 + 0.001*loss2
+
+
 
                 self.running_values["batch_loss"].append({"total": total_loss.detach().cpu().numpy()})
                 self.running_values["targets"].append(label)
@@ -243,8 +259,8 @@ class General_Agent():
             total_preds, val_metrics = {}, defaultdict(dict)
             val_metrics["val_loss"] = dict(mean_batch)
             for pred_key in self.running_values["preds"][0]:
-                total_preds[pred_key] = np.concatenate([pred[pred_key] for pred in self.running_values["preds"]],
-                                                       axis=0).argmax(axis=-1)
+                total_preds[pred_key] = np.concatenate([pred[pred_key] for pred in self.running_values["preds"]], axis=0).argmax(axis=-1)
+                # total_preds[pred_key] = np.concatenate([pred[pred_key] for pred in self.running_values["preds"]], axis=0)
                 val_metrics["val_acc"][pred_key] = np.equal(self.running_values["targets"],
                                                              total_preds[pred_key]).sum() / len(
                     self.running_values["targets"])
@@ -259,7 +275,10 @@ class General_Agent():
 
         return val_metrics
 
-    def test(self):
+    def test(self, dataloader = None):
+        if dataloader is None:
+            dataloader = self.dataloaders.test_loader
+
         self.model.eval()
         self.running_values = {
             "targets": [],
@@ -267,7 +286,7 @@ class General_Agent():
             "batch_loss": []
         }
         with torch.no_grad():
-            pbar = tqdm(enumerate(self.dataloaders.test_loader), desc="Test", leave=False,
+            pbar = tqdm(enumerate(dataloader), desc="Test", leave=False,
                         disable=True, position=1)
             for batch_idx, served_dict in pbar:
 
@@ -310,6 +329,8 @@ class General_Agent():
                                                                     self.running_values["targets"])
                 test_metrics["test_perclassf1"][pred_key] = f1_score(total_preds[pred_key],
                                                                     self.running_values["targets"], average=None)
+                test_metrics["test_confmatrix"][pred_key] = confusion_matrix(total_preds[pred_key], self.running_values["targets"])
+
             test_metrics = dict(test_metrics)  # Avoid passing empty dicts to logs, better return an error!
             # print(val_metrics)
         return test_metrics
@@ -325,7 +346,11 @@ class General_Agent():
                         position=1)
             for batch_idx, served_dict in pbar:
                 data = served_dict["data"].float().to(self.device)
-                pred = self.model(data)
+                pred = self.best_model(data)
+
+                # features, centers, distance, test_outputs = self.model(data)
+                # _, pred = torch.max(distance, 1)
+
                 results.update({served_dict["id"][i].item(): pred[i].detach().cpu().numpy()  for i in
                                 range(len(pred))})
         self.save_unlabelled(results)
@@ -346,10 +371,16 @@ class General_Agent():
                 data = served_dict["data"].float().to(self.device)
                 label = served_dict["label"].squeeze().type(torch.LongTensor).to(self.device)
 
+                # features, centers, distance, test_outputs = self.model(data)
+                # _, pred = torch.max(distance, 1)
+                # self.running_values["preds"].append(pred.detach())
+
+
                 pred, features  = self.model(data, return_features=True)
+                self.running_values["preds"].append(pred.argmax(dim=-1).detach())
+
 
                 self.running_values["targets"].append(label)
-                self.running_values["preds"].append(pred.argmax(dim=-1).detach())
                 self.running_values["features"].append(features)
 
                 del served_dict
@@ -403,6 +434,7 @@ class General_Agent():
             csvfile.write("%s,%s\n" % ("id", "malignant"))
             for key in results.keys():
                 csvfile.write("%s,%s\n" % (key, results[key].argmax(axis=0) - 1))
+                # csvfile.write("%s,%s\n" % (key, results[key] - 1))
         print("Saved results in {}".format(self.config.model.test_unlabelled_savedir))
 
     def load_model_logs(self, file_name):
@@ -561,6 +593,7 @@ class General_Agent():
         train_metrics["train_loss"] = dict(batch_loss)
         for pred_key in predictions[0]:
             total_preds[pred_key] = np.concatenate([pred[pred_key] for pred in predictions if pred_key in pred],axis=0).argmax(axis=-1)
+            # total_preds[pred_key] = np.concatenate([pred[pred_key] for pred in predictions if pred_key in pred],axis=0)
             train_metrics["train_acc"][pred_key] =  np.equal(target_dict[pred_key], total_preds[pred_key]).sum() / len(target_dict[pred_key])
             train_metrics["train_f1"][pred_key] = f1_score(total_preds[pred_key], target_dict[pred_key], average="micro")
             train_metrics["train_k"][pred_key] = cohen_kappa_score(total_preds[pred_key], target_dict[pred_key])
