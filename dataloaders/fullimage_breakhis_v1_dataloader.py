@@ -31,8 +31,8 @@ class OxML_FullImage_Supervised_BreaKHis_v1_Dataset(Dataset):
 
         with open(self.config.dataset.label_root, "r") as file:
             self.labels = np.array(file.readlines())
-        self.labels[self.labels=="benign\n"] = 0
-        self.labels[self.labels=="malignant\n"] = 1
+        self.labels[self.labels=="benign\n"] = 1
+        self.labels[self.labels=="malignant\n"] = 2
         self.labels = torch.from_numpy(np.array(self.labels, dtype=int))
 
         # #Normalization per color
@@ -224,28 +224,58 @@ class OxML_FullImage_Supervised_BreaKHis_v1_Dataloader():
 
     def _get_transformations(self):
 
-
-
         Transf_train = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.RandomAffine(degrees=60, translate=(0.1, 0.1), scale=(0.9, 1.1)),
-            # transforms.RandomAffine(degrees=180, translate=(0.3, 0.3)),
-            transforms.ColorJitter(brightness=0.2, contrast=0.2),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.4914, 0.4822, 0.4465),
-            #                      (0.2023, 0.1994, 0.2010)),
-            transforms.Normalize((0.7885319,  0.62283134, 0.76810527),
-                                 (0.12782803, 0.17885329, 0.10906959))])
-            # transforms.Normalize(0.7852222323417664 , 0.21302133798599243)])
+            # transforms.ToTensor(),
 
+            # transforms.RandomAffine(degrees=100, translate=(0.2, 0.2), scale=(0.9, 1.1)),
+            # transforms.RandomAffine(degrees=180, translate=(0.3, 0.3)),
+            transforms.ColorJitter(),
+            transforms.GaussianBlur(kernel_size=(5, 5), sigma=(0.5, 0.5)),
+            transforms.RandomHorizontalFlip(0.5),
+            transforms.RandomVerticalFlip(0.5),
+            transforms.ToTensor(),
+
+            torchvision.transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+
+        # Transf_train = transforms.Compose([
+        #     transforms.ToPILImage(),
+        #     transforms.RandomAffine(degrees=60, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+        #     # transforms.RandomAffine(degrees=180, translate=(0.3, 0.3)),
+        #     transforms.ColorJitter(brightness=0.2, contrast=0.2),
+        #     transforms.ToTensor(),
+        #     # transforms.Normalize((0.4914, 0.4822, 0.4465),
+        #     #                      (0.2023, 0.1994, 0.2010)),
+        #     transforms.Normalize((0.7885319,  0.62283134, 0.76810527),
+        #                          (0.12782803, 0.17885329, 0.10906959))])
+        #     # transforms.Normalize(0.7852222323417664 , 0.21302133798599243)])
         Transf_val = transforms.Compose([
             transforms.ToPILImage(),
             transforms.ToTensor(),
-            # transforms.Normalize((0.4914, 0.4822, 0.4465),
-            #                      (0.2023, 0.1994, 0.2010))])
-            transforms.Normalize((0.7885319,  0.62283134, 0.76810527),
-                                 (0.12782803, 0.17885329, 0.10906959))])
-            # transforms.Normalize(0.7852222323417664, 0.21302133798599243)])
+
+        # ])
+        #     transforms.Normalize((0.4914, 0.4822, 0.4465),
+        #                          (0.2023, 0.1994, 0.2010))])
+        #     transforms.Normalize((0.7951, 0.6938, 0.8667),
+        #                          (0.2115, 0.2500, 0.1176))])
+
+            transforms.Normalize((0.485, 0.456, 0.406),
+                                 (0.229, 0.224, 0.225)),
+
+            # transforms.ToTensor(),
+
+                             ])
+
+
+        # Transf_val = transforms.Compose([
+        #     transforms.ToPILImage(),
+        #     transforms.ToTensor(),
+        #     # transforms.Normalize((0.4914, 0.4822, 0.4465),
+        #     #                      (0.2023, 0.1994, 0.2010))])
+        #     transforms.Normalize((0.7885319,  0.62283134, 0.76810527),
+        #                          (0.12782803, 0.17885329, 0.10906959))])
+        #     # transforms.Normalize(0.7852222323417664, 0.21302133798599243)])
 
         return {"train": Transf_train, "val": Transf_val}
 
