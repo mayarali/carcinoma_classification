@@ -7,6 +7,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 from torch.autograd import Variable
+from torchvision.models import resnet50, ResNet50_Weights
 
 
 class CNN_PB(nn.Module):
@@ -22,21 +23,23 @@ class CNN_PB(nn.Module):
         self.scale = s
         self.preluip1 = nn.PReLU()
         self.ip1 = nn.Linear(128 * 3 * 3, fc_inner)
+        # self.ip1 = nn.Linear(128, fc_inner)
         self.dce = dce_loss(num_classes, fc_inner)
 
     def forward(self, x, return_features=False):
         x = self.enc_0(x)
-        # print(x.shape)
+
         xf = x.view(-1, 128 * 3 * 3)
+        # xf = x.view(-1, 128)
 
 
         x1 = self.preluip1(self.ip1(xf))
         centers, x = self.dce(x1)
-        # output = F.log_softmax(self.scale * x, dim=1)
-        # return x1, centers, x, output
-        if return_features:
-            return self.scale * x, xf
-        return self.scale * x
+        output = F.log_softmax(self.scale * x, dim=1)
+        return x1, centers, x, output
+        # if return_features:
+        #     return self.scale * x, xf
+        # return self.scale * x
 
 class CNN_PB_part(nn.Module):
     def __init__(self, encs=None, args=None):
@@ -57,6 +60,11 @@ class CNN_PB_part(nn.Module):
         self.prelu3_2 = nn.PReLU()
         self.preluip1 = nn.PReLU()
 
+        # self.cnn = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
+        # self.cnn.requires_grad_(False)
+        # self.fc = nn.Linear(1000, 128)
+
+
     def forward(self, x):
         x = self.prelu1_1(self.conv1_1(x))
         x = self.prelu1_2(self.conv1_2(x))
@@ -69,6 +77,7 @@ class CNN_PB_part(nn.Module):
         x = F.max_pool2d(x, 2)
 
         return x
+        # return self.fc(self.cnn(x))
 
 class dce_loss(torch.nn.Module):
     def __init__(self, n_classes, feat_dim, init_weight=True):
@@ -98,4 +107,4 @@ def regularization(features, centers, labels):
 
     distance = (torch.sum(distance, 0, keepdim=True)) / features.shape[0]
 
-    return distance
+    return distance.squeeze()

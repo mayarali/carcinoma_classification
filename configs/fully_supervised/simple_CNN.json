@@ -17,7 +17,7 @@
         "use": false,
         "adv_epsilon": 0.01
       },
-      "tdqm_disable": true,
+      "tdqm_disable": false,
       "wandb_disable": false,
       "res": true
   },
@@ -57,25 +57,17 @@
   },
   "model": {
     "model_class": "Simple_CNN",
-    "load_ongoing": false,
-    "pretrained_model": {"dir": "", "use": false},
+    "load_ongoing": true,
+    "pretrained_model": {"dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_breakhis.pth.tar", "use": true},
     "save_dir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_2.pth.tar",
     "test_unlabelled_savedir": "/esat/smcdata/users/kkontras/Image_Dataset/no_backup/data/2023_data/OxML/simple_cnn_test_unlabelled_2.csv",
     "args": {
       "dmodel": 256,
       "num_classes": 3,
-      "fc_inner": 64,
-      "dropout": 0.1
+      "fc_inner": 32,
+      "dropout": 0.3
     },
-    "encoders": [{
-                  "model_class": "CNN_part",
-                  "pretrained_model": {
-                    "dir": "",
-                    "use": false},
-                  "savetrainedEncoder": {"save":  false},
-                  "args": {
-                    }
-                  }
+    "encoders": [
         ]
   }
 }

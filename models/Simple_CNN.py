@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision.transforms.functional import pad
-from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import resnet50, ResNet50_Weights, efficientnet_v2_s
 
 class Simple_CNN(nn.Module):
     def __init__(self, encs=None, args=None):
@@ -12,14 +12,21 @@ class Simple_CNN(nn.Module):
         num_classes = args.num_classes
         dropout = args.dropout
 
-        self.cnn = encs[0]
+        # self.cnn = encs[0]
 
         # self.cnn = resnet50(weights=ResNet50_Weights.IMAGENET1K_V2)
-        # self.cnn.requires_grad_(False)
+
+        efficient_net = efficientnet_v2_s(weights='DEFAULT')
+        self.cnn = efficient_net.features
+        self.cnn.requires_grad_(False)
+        self.cnn[7].requires_grad_(True)
+
+        self.avg_pool = efficient_net.avgpool
+
 
         self.fc = nn.Sequential(
             nn.Dropout(dropout),
-            nn.Linear(d_model, fc_inner),
+            nn.Linear(1280, fc_inner),
             nn.ReLU(),
             # nn.Linear(fc_inner, fc_inner),
             # nn.ReLU(),
@@ -29,6 +36,8 @@ class Simple_CNN(nn.Module):
 
     def forward(self, input, return_features=False):
         features = self.cnn(input)
+        features = self.avg_pool(features).flatten(start_dim=1)
+
         if return_features:
             return self.fc(features), features
         return  self.fc(features)
