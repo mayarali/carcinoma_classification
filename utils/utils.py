@@ -136,8 +136,8 @@ def get_train_test_paths(image_paths, train_ids):
 
 
 def prepare_train_test_data(
-    image_paths,
-    train_ids,
+    train_set_paths,
+    test_set_paths,
     labels,
     train_transforms=None,
     test_transforms=None,
@@ -147,7 +147,7 @@ def prepare_train_test_data(
     shuffle=False,
     **kwargs,
 ):
-    train_set_paths, test_set_paths = get_train_test_paths(image_paths, train_ids)
+    # train_set_paths, test_set_paths = get_train_test_paths(image_paths, train_ids)
     train_set, train_loader = prepare_data(
         train_set_paths,
         labels=labels,
@@ -350,8 +350,8 @@ def check_data(data_dir="./data"):
     len(train_set_paths), len(test_set_paths)
 
     train_set, train_loader, test_set, test_loader = prepare_train_test_data(
-        image_paths,
-        train_ids,
+        train_set_paths,
+        test_set_paths,
         labels,
         train_transforms=transform,
         test_transforms=transform,
