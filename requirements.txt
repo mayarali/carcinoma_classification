@@ -4,5 +4,6 @@ scikit-image==0.19.3
 scikit-learn==1.0.2
 torch==1.13.1
 torchvision==0.14.1
+pprint
 matplotlib
 jupyter
